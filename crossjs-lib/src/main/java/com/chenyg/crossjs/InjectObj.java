@@ -19,7 +19,7 @@ public class InjectObj
     /**
      * 对应的类必须含有无参构造函数。
      *
-     * @param namespace        命名空间
+     * @param namespace        命名空间,如:"base.ui","lib.util","demo"
      * @param interfaceClasses 要注入的类，必须含有无参构造函数.
      */
     public InjectObj(String namespace, Class<?>... interfaceClasses)

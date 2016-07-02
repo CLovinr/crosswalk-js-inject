@@ -15,7 +15,7 @@ public class CrossjsUtil
 
     /**
      * @param willPrintDebugInfo 是否打印调试信息。
-     * @param topName            顶层对象的名称
+     * @param topName            顶层对象的名称,只能是字母或数字,且不能以数字开头
      * @param injectObjs         用于注入
      */
     public synchronized static void init(boolean willPrintDebugInfo, String topName, InjectObj... injectObjs)
