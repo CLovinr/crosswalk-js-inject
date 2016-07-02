@@ -1,0 +1,34 @@
+
+allprojects {
+
+    repositories {
+        mavenLocal()
+        jcenter()
+        mavenCentral()
+        flatDir {
+            dirs 'libs','../cw-libs/'//cw-libs目录中存放着crosswalk-lite的aar包
+        }
+    }
+
+
+}
+
+
+
+buildscript {
+    repositories {
+        mavenLocal()
+        jcenter()
+        mavenCentral()
+
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.0.0'
+    }
+}
+
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

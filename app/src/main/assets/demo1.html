@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>demo1</title>
+		<meta name="viewport" content="width=device-width,height=device-height,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+	</head>
+
+	<body>
+		<script>
+			console.log(test.js1.hello());
+			console.log("exports:"+(typeof exports));
+			test.js1.jsFun(function(call){
+				test.js1.toast(call("jsFun!"));
+				return "return from js!";
+			});
+		</script>
+		<a onclick="javascript:location.reload();return false;">刷新</a>
+		<iframe src="demo1-inner.html" style="display: block;width: 100%;"></iframe>
+	</body>
+
+</html>
