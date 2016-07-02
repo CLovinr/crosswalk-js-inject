@@ -14,7 +14,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.UUID;
 
 class JsCallJava
 {
@@ -576,7 +575,8 @@ class JsCallJava
                 && !(result instanceof Boolean)
                 && !(result instanceof Float)
                 && !(result instanceof Double)
-                && !(result instanceof JSONObject))
+                && !(result instanceof JSONObject)
+                && !(result instanceof JSONArray))
         {    // 非数字或者非字符串的构造对象类型都要序列化后再拼接
             if (gson == null)
             {
@@ -584,7 +584,7 @@ class JsCallJava
             }
             insertRes = gson.toJson(result);
         } else
-        {  //数字直接转化
+        {  //直接转化
             insertRes = String.valueOf(result);
         }
 

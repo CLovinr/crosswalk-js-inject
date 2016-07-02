@@ -193,7 +193,7 @@
 	            if (!isPermanent) {
 	                returnObj.destroy(id);
 	            }
-	            if(callResult!==null&&callResult!=undefined){
+	            if(callResult!==null&&callResult!=undefined&&(typeof callResult !=="string")){
 	            	callResult=JSON.stringify(callResult);
 	            }
 				jsCallbackReturnBridge(JSON.stringify({"id":id,"return":callResult}));

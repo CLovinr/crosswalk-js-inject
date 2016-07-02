@@ -16,6 +16,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
     private JsCallJava jsCallJava;
     private Map<Integer, Map<String, JsReturn>> jsReturnMap = Collections
             .synchronizedMap(new HashMap<Integer, Map<String, JsReturn>>());
+    private boolean isDisabled =false;
 
     public MyXWalkExtension(String name, JsCallJava jsCallJava)
     {
@@ -23,9 +24,16 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
         this.jsCallJava = jsCallJava;
     }
 
+    public void disable(boolean isDisabled){
+        this.isDisabled=isDisabled;
+    }
+
     @Override
     public void onMessage(int instanceId, String jsonStr)
     {
+        if(isDisabled){
+            return;
+        }
         try
         {
             JSONObject jsonObject = new JSONObject(jsonStr);
@@ -56,12 +64,20 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
     @Override
     public String onSyncMessage(int instanceId, String jsonStr)
     {
+        if(isDisabled){
+            return null;
+        }
         return jsCallJava.call(this, instanceId, jsonStr);
     }
 
     @Override
     public JsReturn invoke(String jsCallbackId, int instanceId, String content)
     {
+
+        if(isDisabled){
+            return null;
+        }
+
         JsReturn jsReturn = null;
         postMessage(instanceId, content);
 
