@@ -1,12 +1,12 @@
 package com.chenyg.crossjs;
 
 import android.util.Log;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.xwalk.core.XWalkExtension;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by 宇宙之灵 on 2016/6/30.
@@ -16,22 +16,66 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
     private JsCallJava jsCallJava;
     private Map<Integer, Map<String, JsReturn>> jsReturnMap = Collections
             .synchronizedMap(new HashMap<Integer, Map<String, JsReturn>>());
-    private boolean isDisabled =false;
+    private boolean isDisabled = false;
+    private Set<String> injectsNames = Collections.synchronizedSet(new HashSet<String>());
+    private IInjectHandle iInjectHandle;
 
-    public MyXWalkExtension(String name, JsCallJava jsCallJava)
+    private Map<String, String> dynamics = Collections.synchronizedMap(new HashMap<String, String>());
+
+    public MyXWalkExtension(String topName, JsCallJava jsCallJava, InjectObj[] injectObjs)
     {
-        super(name, jsCallJava.getPreloadInterfaceJS());
+        super(topName, jsCallJava.getPreloadInterfaceJS());
         this.jsCallJava = jsCallJava;
+        for (int i = 0; i < injectObjs.length; i++)
+        {
+            injectsNames.add(injectObjs[i].namespace);
+        }
     }
 
-    public void disable(boolean isDisabled){
-        this.isDisabled=isDisabled;
+    public synchronized void addDynamicInjectObj(InjectObj injectObj)
+    {
+        try
+        {
+            dynamics.put(injectObj.namespace, jsCallJava.dynamicInjectOne(injectObj));
+        } catch (Exception e)
+        {
+            if (jsCallJava.willPrintDebugInfo())
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public synchronized void removeDynamicInjectObj(String namespace)
+    {
+        dynamics.remove(namespace);
+    }
+
+    public synchronized void setIInjectHandle(IInjectHandle iInjectHandle)
+    {
+        this.iInjectHandle = iInjectHandle;
+    }
+
+    private IInjectHandle getIInjectHandle()
+    {
+        return iInjectHandle == null ? IInjectHandle.ENABLE_ALL_HANDLE : iInjectHandle;
+    }
+
+    /**
+     * 整体启用或禁用注入的接口。
+     *
+     * @param isDisabled
+     */
+    public synchronized void disable(boolean isDisabled)
+    {
+        this.isDisabled = isDisabled;
     }
 
     @Override
     public void onMessage(int instanceId, String jsonStr)
     {
-        if(isDisabled){
+        if (isDisabled)
+        {
             return;
         }
         try
@@ -62,19 +106,128 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
     }
 
     @Override
-    public String onSyncMessage(int instanceId, String jsonStr)
+    public synchronized String onSyncMessage(int instanceId, String jsonStr)
     {
-        if(isDisabled){
+        if (isDisabled)
+        {
             return null;
         }
-        return jsCallJava.call(this, instanceId, jsonStr);
+
+        try
+        {
+            JSONObject jsonObject = new JSONObject(jsonStr);
+            switch (jsonObject.getString("type"))
+            {
+                case "bridge":
+                    return jsCallJava.call(this, instanceId, jsonObject.getString("value"));
+                case "enables":
+                    return getEnables(jsonObject.getString("value"));
+                default:
+                    return null;
+            }
+        } catch (JSONException e)
+        {
+            if (jsCallJava.willPrintDebugInfo())
+            {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+
+    }
+
+
+    private synchronized String getEnables(String url)
+    {
+
+
+        final JSONObject enables = new JSONObject();
+
+        IInjectHandle iInjectHandle = getIInjectHandle();
+        iInjectHandle.beforeInject(url, new IInjectHandle.IDeal()
+        {
+            @Override
+            public void enableInterface(String... interfaceNamespaces)
+            {
+                Arrays.sort(interfaceNamespaces);
+                try
+                {
+                    JSONObject injects = new JSONObject();
+                    enables.put("injects", injects);
+                    Iterator<String> namespaces = injectsNames.iterator();
+                    while (namespaces.hasNext())
+                    {
+                        String ns = namespaces.next();
+                        if (Arrays.binarySearch(interfaceNamespaces, ns) >= 0)
+                        {
+                            injects.put(ns, true);
+                        }
+                    }
+
+                    JSONArray _dynamics = new JSONArray();
+                    enables.put("dynamics",_dynamics);
+                    namespaces = dynamics.keySet().iterator();
+                    while (namespaces.hasNext())
+                    {
+                        String ns = namespaces.next();
+                        if (Arrays.binarySearch(interfaceNamespaces, ns) >= 0)
+                        {
+                            _dynamics.put(dynamics.get(ns));
+                        }
+                    }
+                } catch (JSONException e)
+                {
+                    e.printStackTrace();
+                }
+
+            }
+
+            @Override
+            public void disableInterface(String... interfaceNamespaces)
+            {
+                Arrays.sort(interfaceNamespaces);
+                try
+                {
+                    JSONObject injects = new JSONObject();
+                    enables.put("injects", injects);
+                    Iterator<String> namespaces = injectsNames.iterator();
+                    while (namespaces.hasNext())
+                    {
+                        String ns = namespaces.next();
+                        if (Arrays.binarySearch(interfaceNamespaces, ns) < 0)
+                        {
+                            injects.put(ns, true);
+                        }
+                    }
+
+                    JSONArray _dynamics = new JSONArray();
+                    enables.put("dynamics",_dynamics);
+                    namespaces = dynamics.keySet().iterator();
+                    while (namespaces.hasNext())
+                    {
+                        String ns = namespaces.next();
+                        if (Arrays.binarySearch(interfaceNamespaces, ns) < 0)
+                        {
+                            _dynamics.put(dynamics.get(ns));
+                        }
+                    }
+                } catch (JSONException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        return enables.toString();
     }
 
     @Override
     public JsReturn invoke(String jsCallbackId, int instanceId, String content)
     {
 
-        if(isDisabled){
+        if (isDisabled)
+        {
             return null;
         }
 

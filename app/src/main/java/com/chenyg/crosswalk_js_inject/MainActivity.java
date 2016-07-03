@@ -12,22 +12,24 @@ public class MainActivity extends XWalkActivity
 {
 
     private XWalkView xWalkView;
+
     @Override
     protected void onXWalkReady()
     {
-        xWalkView = new XWalkView(this,this);
+        xWalkView = new XWalkView(this, this);
 
-        xWalkView.load("file:///android_asset/demo1.html",null);
+        xWalkView.load("file:///android_asset/demo1.html", null);
         ViewGroup viewGroup = (ViewGroup) findViewById(R.id.cross_parent);
         viewGroup.removeAllViewsInLayout();
         viewGroup.addView(xWalkView);
+        CrossjsUtil.getCrossjsUtil().addDynamicInjectObj(new InjectObj("dynamic", DynamicJs.class));
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        CrossjsUtil.init(true,"test",new InjectObj("js1",new Js1(new Handler(),this)));
+        CrossjsUtil.init(true, "test", new InjectObj("js1", new Js1(new Handler(), this)));
         setContentView(R.layout.activity_main);
     }
 
@@ -35,7 +37,8 @@ public class MainActivity extends XWalkActivity
     protected void onDestroy()
     {
         super.onDestroy();
-        if(xWalkView!=null){
+        if (xWalkView != null)
+        {
             xWalkView.onDestroy();
         }
     }

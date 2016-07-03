@@ -25,6 +25,7 @@ class JsCallJava
     private String preloadInterfaceJS;
     private Gson gson;
     private boolean willPrintDebugInfo, searchMoreForObjFun;
+    private String injectTml;
     String topName;
 
 
@@ -54,11 +55,12 @@ class JsCallJava
 
             String tmlCommon = WEBUtil.loadPackageJs(getClass(), "/crossjs/js-java-common.js", willPrintDebugInfo);
             String tml = WEBUtil.loadPackageJs(getClass(), "/crossjs/js-java.js", willPrintDebugInfo);
+            this.injectTml = tml;
+
             String extension = WEBUtil.loadPackageJs(getClass(), "/crossjs/crossjs-extension.js", willPrintDebugInfo);
+            String extensionDynamic = WEBUtil.loadPackageJs(getClass(), "/crossjs/crossjs-extension-dynamic.js", willPrintDebugInfo);
 
             StringBuilder sbuilder = new StringBuilder();
-
-            sbuilder.append("(function(){");
 
             sbuilder.append(extension);
 
@@ -68,9 +70,7 @@ class JsCallJava
             {
                 injectOne(sbuilder, injectObj, tml, false, topName);
             }
-
-            sbuilder.append("})();");
-
+            sbuilder.append(extensionDynamic);
 
             preloadInterfaceJS = sbuilder.toString();
             if (willPrintDebugInfo)
@@ -90,6 +90,19 @@ class JsCallJava
         return willPrintDebugInfo;
     }
 
+
+    /**
+     * 用于动态注入。
+     * @param injectObj
+     * @return
+     * @throws Exception
+     */
+    String dynamicInjectOne(InjectObj injectObj) throws Exception
+    {
+        StringBuilder stringBuilder = new StringBuilder();
+        injectOne(stringBuilder, injectObj, injectTml, false, topName);
+        return stringBuilder.toString();
+    }
 
     private void injectOne(StringBuilder sbuilder, InjectObj injectObj, String tml, boolean isCommon,
             String topName) throws Exception
@@ -153,6 +166,8 @@ class JsCallJava
         {
             tml = tml.replace("<TOP_NAME>", topName);
             tml = tml.replace("<NAMESPACE>", "\"" + injectObj.namespace + "\"");
+            tml = tml.replace("<INJECT_NAME>", injectObj.namespace);
+            tml = tml.replace("<INJECT_HANDLE>", "__injectHandle__");
             tml = tml.replace("<HOST_APP>", injectObj.namespace);
             tml = tml.replace("<HOST_APP_NAMESPACES>", namespaces);
             tml = tml.replace("<HOST_APP_FUN>", smethods);
@@ -565,7 +580,7 @@ class JsCallJava
             insertRes = "null";
         } else if (result instanceof String)
         {
-            result = (((String) result).replace("\"", "\\\"")).replace("\n","\\n").replace("\r","\\r");
+            result = (((String) result).replace("\"", "\\\"")).replace("\n", "\\n").replace("\r", "\\r");
             insertRes = "\"" + result + "\"";
         } else if (result instanceof Java2JsCallback)
         {

@@ -1,12 +1,11 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion "22.0.1"
-
+    compileSdkVersion 23
+    buildToolsVersion '23.0.3'
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 22
+        targetSdkVersion 23
         versionCode 1
         versionName "1.0"
     }
@@ -16,12 +15,50 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+    productFlavors {
+    }
 }
 
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
-    compile (name:'xwalk_core_library_canary-17.46.459.1',ext:"aar")
-    compile 'com.google.code.gson:gson:2.3.1+'
+    //compile (name:'xwalk_core_library_canary-17.46.459.1',ext:"aar")
+    compile 'com.google.code.gson:gson:2.3.1'
+    compile 'org.xwalk:xwalk_core_library_canary:17.46.459.1'
+}
+
+//用于发布aar到本地maven仓库
+apply plugin: 'maven'
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: 'file://H:/Win10Moved/Users/宇宙之灵/.m2/repository')
+            pom.project {
+                name 'crossjs-lib'
+                groupId 'com.chenyg.crossjs'
+                artifactId 'crossjs-lib'
+                version '1.0'
+                packaging 'aar'
+
+                licenses {
+                    license {
+                        name 'The MIT License (MIT)'
+                        url 'https://github.com/CLovinr/crosswalk-js-inject/blob/master/LICENSE'
+                        distribution 'repo'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'crossjs-lib'
+                        name 'crossjs-lib'
+                    }
+                }
+            }
+        }
+    }
 }

@@ -1,15 +1,13 @@
-
 allprojects {
 
     repositories {
         mavenLocal()
         jcenter()
         mavenCentral()
-        flatDir {
-            dirs 'libs','../cw-libs/'//cw-libs目录中存放着crosswalk-lite的aar包
-        }
+//        flatDir {
+//            dirs 'libs', '../cw-libs/'//cw-libs目录中存放着crosswalk-lite的aar包
+//        }
     }
-
 
 }
 
