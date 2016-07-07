@@ -15,7 +15,7 @@ import org.json.JSONArray;
 /**
  * 用于java端调用js。
  */
-public class JsCallback
+public class JsFunction
 {
 
     private static final String CALLBACK_JS_FORMAT = "javascript:%s.__callback__('%s',%d,%s);";
@@ -32,15 +32,15 @@ public class JsCallback
     boolean isDebug;
 
 
-    JsCallback(WebBridge webBridge, String topName, String namespace, String id,int instanceId,boolean isDebug)
+    JsFunction(WebBridge webBridge, String topName, String namespace, String id,int instanceId,boolean isDebug)
     {
         couldGoOn = true;
         this.webBridge = webBridge;
         this.instanceId=instanceId;
         this.isDebug=isDebug;
         this.namespace = topName + "." + namespace;
-        this.id = id.startsWith(InjectObj.JSON_FUNCTION_STARTS) ? id
-                .substring(InjectObj.JSON_FUNCTION_STARTS.length()) : id;
+        this.id = id.startsWith(InjectObj.JS_FUNCTION_STARTS) ? id
+                .substring(InjectObj.JS_FUNCTION_STARTS.length()) : id;
     }
 
     public boolean isPermanent()
@@ -63,7 +63,7 @@ public class JsCallback
     {
         if (!couldGoOn)
         {
-            throw new JsCallbackException("the JsCallback isn't permanent,cannot be called more than once");
+            throw new JsCallbackException("the JsFunction isn't permanent,cannot be called more than once");
         }
         JSONArray params = new JSONArray();
         for (Object arg : args)
@@ -90,13 +90,13 @@ public class JsCallback
         }
     }
 
-    public static void tryApply(JsCallback jsCallback, Object... args)
+    public static void tryApply(JsFunction jsFunction, Object... args)
     {
-        if (jsCallback != null)
+        if (jsFunction != null)
         {
             try
             {
-                jsCallback.apply(args);
+                jsFunction.apply(args);
             } catch (JsCallbackException e)
             {
                 e.printStackTrace();

@@ -6,11 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * json对象中的字符串不能以{@linkplain #JSON_FUNCTION_STARTS}或{@linkplain Java2JsCallback#JAVA_CALLBACK}开头。
+ * json对象中的字符串不能以{@linkplain #JS_FUNCTION_STARTS}或{@linkplain JavaFunction#JAVA_CALLBACK}开头。
+ * <br>
+ * 命名空间合法字符：包含字母、数字、下划线、美元符号，以点号'.'隔开
  */
 public class InjectObj
 {
-    public final static String JSON_FUNCTION_STARTS = "[-/function/-]=";
+    public final static String JS_FUNCTION_STARTS = "[-/js-function/-]=";
 
     String namespace;
     List<Class<?>> interfaceClasses = new ArrayList<>();
@@ -24,11 +26,7 @@ public class InjectObj
      */
     public InjectObj(String namespace, Class<?>... interfaceClasses)
     {
-        if (TextUtils.isEmpty(namespace))
-        {
-            throw new RuntimeException("namespace can not be null!");
-        }
-        this.namespace = namespace;
+        setNamespace(namespace);
         this.add(interfaceClasses);
     }
 
@@ -38,12 +36,20 @@ public class InjectObj
      */
     public InjectObj(String namespace, Object... interfaceObjects)
     {
+        setNamespace(namespace);
+        this.add(interfaceObjects);
+    }
+
+    private void setNamespace(String namespace)
+    {
         if (TextUtils.isEmpty(namespace))
         {
             throw new RuntimeException("namespace can not be null!");
+        } else if (!WEBUtil.isNamespace(namespace))
+        {
+            throw new RuntimeException("the namespace is illegal!");
         }
         this.namespace = namespace;
-        this.add(interfaceObjects);
     }
 
     /**

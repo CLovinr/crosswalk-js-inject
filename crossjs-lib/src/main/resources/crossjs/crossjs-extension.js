@@ -1,10 +1,15 @@
-
+var __log__ = <LOG>;
 extension.setMessageListener(function(message) {
 	try{
 		if(message.indexOf("javascript:")==0){
 			eval(message.substr("javascript:".length));
 		}
 	}catch(e){
+		if(__log__){
+			console.log(e);
+			console.log(message);
+		}
+
 	}
 });
 

@@ -8,7 +8,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -58,7 +57,11 @@ class JsCallJava
             this.injectTml = tml;
 
             String extension = WEBUtil.loadPackageJs(getClass(), "/crossjs/crossjs-extension.js", willPrintDebugInfo);
-            String extensionDynamic = WEBUtil.loadPackageJs(getClass(), "/crossjs/crossjs-extension-dynamic.js", willPrintDebugInfo);
+
+            extension = extension.replace("<LOG>", String.valueOf(willPrintDebugInfo));
+
+            String extensionDynamic = WEBUtil
+                    .loadPackageJs(getClass(), "/crossjs/crossjs-extension-dynamic.js", willPrintDebugInfo);
 
             StringBuilder sbuilder = new StringBuilder();
 
@@ -93,6 +96,7 @@ class JsCallJava
 
     /**
      * 用于动态注入。
+     *
      * @param injectObj
      * @return
      * @throws Exception
@@ -158,8 +162,8 @@ class JsCallJava
             tml = tml.replace("<RETURN_BRIDGE>", "__async_bridge__");
             tml = tml.replace("<SEARCH_MORE>", String.valueOf(searchMoreForObjFun));
 
-            tml = tml.replace("<JSON_FUNCTION_STARTS>", InjectObj.JSON_FUNCTION_STARTS);
-            tml = tml.replace("<JAVA_CALLBACK>", "\"" + Java2JsCallback.JAVA_CALLBACK + "\"");
+            tml = tml.replace("<JS_FUNCTION_STARTS>", InjectObj.JS_FUNCTION_STARTS);
+            tml = tml.replace("<JAVA_CALLBACK>", "\"" + JavaFunction.JAVA_CALLBACK + "\"");
             tml = tml.replace("<TOP_NAME>", "common");
             tml = tml.replace("<COMMON_NAMESPACES>", namespaces);
         } else
@@ -209,7 +213,59 @@ class JsCallJava
         }
     }
 
-    static String genJavaMethodSign(Method method, boolean needMethodName, Class<? extends Annotation> annotaion)
+
+    private Object[] dealParamsFirst(JsInterface jsInterface, Object[] values, int instanceId)
+    {
+        JsInterface.Param[] params = jsInterface.paramsFirst();
+        if (params.length == 0)
+        {
+            return values;
+        }
+        Object[] vs = new Object[values.length + params.length];
+        System.arraycopy(values, 0, vs, params.length, values.length);
+        for (int i = 0; i < params.length; i++)
+        {
+            switch (params[i])
+            {
+
+                case builder:
+                {
+                    vs[i] = new JsInterface.Builder(instanceId, willPrintDebugInfo);
+                }
+                break;
+            }
+        }
+        return vs;
+    }
+
+    private static boolean dealSignOfParamsFirst(Class<?> type, JsInterface jsInterface,
+            int index) throws RuntimeException
+    {
+        boolean willContinue = false;
+        if (index < jsInterface.paramsFirst().length)
+        {
+
+            switch (jsInterface.paramsFirst()[index])
+            {
+
+                case builder:
+                {
+                    if (!type.equals(JsInterface.Builder.class))
+                    {
+                        throw new RuntimeException(
+                                "The param at index of " + index + " have to be the type of " + JsInterface.Builder
+                                        .class);
+                    }
+                    willContinue = true;
+                }
+                break;
+            }
+
+        }
+        return willContinue;
+    }
+
+    static String genJavaMethodSign(Method method, boolean needMethodName, Class<JsInterface> annotaion)
     {
         if (Modifier
                 .isStatic(method.getModifiers()) || !method.isAnnotationPresent(annotaion))
@@ -220,28 +276,18 @@ class JsCallJava
         String sign = needMethodName ? method.getName() : "";
         Class[] argsTypes = method.getParameterTypes();
         int len = argsTypes.length;
-
+        JsInterface jsInterface = method.getAnnotation(annotaion);
+        if (argsTypes.length < jsInterface.paramsFirst().length)
+        {
+            throw new RuntimeException(
+                    "The param list length of " + method + " is less than the length of " + JsInterface.class
+                            .getSimpleName() + " paramsFirst.");
+        }
         for (int k = 0; k < len; k++)
         {
             Class cls = argsTypes[k];
-            if (cls == Java2JsCallback.Builder.class)
+            if (dealSignOfParamsFirst(cls, jsInterface, k))
             {
-                Object object = method.getAnnotation(annotaion);
-                boolean needBuilder;
-                if (object instanceof JsInterface)
-                {
-                    needBuilder = ((JsInterface) object).needBuilder();
-                } else
-                {
-                    needBuilder = ((Java2JsCallback.Callback) object).needBuilder();
-                }
-
-                if (!needBuilder || k != 0)
-                {
-                    throw new RuntimeException(
-                            "needBuilder have to be true and the builder have to be the first parameter!");
-                }
-
                 continue;
             } else if (cls == String.class)
             {
@@ -261,7 +307,7 @@ class JsCallJava
             } else if (cls == JSONArray.class)
             {
                 sign += "_A";
-            } else if (cls == JsCallback.class)
+            } else if (cls == JsFunction.class)
             {
                 sign += "_F";
             } else
@@ -282,11 +328,11 @@ class JsCallJava
     {
         if (obj != null)
         {
-            if ((obj instanceof String) && ((String) obj).startsWith(InjectObj.JSON_FUNCTION_STARTS))
+            if ((obj instanceof String) && ((String) obj).startsWith(InjectObj.JS_FUNCTION_STARTS))
             {
-                JsCallback jsCallback =
-                        new JsCallback(webBridge, topName, namespace, (String) obj, instanceId, willPrintDebugInfo());
-                obj = jsCallback;
+                JsFunction jsFunction =
+                        new JsFunction(webBridge, topName, namespace, (String) obj, instanceId, willPrintDebugInfo());
+                obj = jsFunction;
             } else if ((obj instanceof JSONObject) && searchMoreForObjFun)
             {
                 parseJSON(webBridge, namespace, (JSONObject) obj, instanceId);
@@ -357,42 +403,36 @@ class JsCallJava
 
                 if ("destroy".equals(javaCallbackType))
                 {
-                    Java2JsCallback.remove(callbackId, instanceId);
-                    return getReturn(Java2JsCallback.JAVA_CALLBACK, methodName, 200, null);
+                    JavaFunction.remove(callbackId, instanceId);
+                    return getReturn(JavaFunction.JAVA_CALLBACK, methodName, 200, null);
                 } else
                 {
-                    Java2JsCallback java2JsCallback = Java2JsCallback.get(callbackId, instanceId);
-                    if (java2JsCallback == null)
+                    JavaFunction javaFunction = JavaFunction.get(callbackId, instanceId);
+                    if (javaFunction == null)
                     {
-                        return getReturn(Java2JsCallback.JAVA_CALLBACK, methodName, 500,
-                                "not found java2JsCallback(id=" + callbackId + ")");
+                        return getReturn(JavaFunction.JAVA_CALLBACK, methodName, 500,
+                                "not found javaFunction(id=" + callbackId + ")");
                     }
                     switch (javaCallbackType)
                     {
                         case "setPermanent":
                         {
                             boolean isPermanent = argsVals.getBoolean(startIndex);
-                            java2JsCallback.setPermanent(isPermanent);
-                            return getReturn(Java2JsCallback.JAVA_CALLBACK, methodName, 200, null);
+                            javaFunction.setPermanent(isPermanent);
+                            return getReturn(JavaFunction.JAVA_CALLBACK, methodName, 200, null);
                         }
 
                         case "callback":
                         {
                             values = new Object[argsVals.length() - startIndex];
-                            namespace = "";
                             dealArgsTemp = dealArgs(webBridge, values, 0, "", argsTypes, argsVals, startIndex,
-                                    "", instanceId);
-                            currMethod = java2JsCallback.getMethodClass(dealArgsTemp.sign);
-                            if (currMethod != null)
-                            {
-                                Java2JsCallback.Callback callback = currMethod.method.getAnnotation(
-                                        Java2JsCallback.Callback.class);
-                                values = redealArgs(callback.needBuilder(), values, instanceId);
-                            }
+                                    namespace, instanceId);
+                            currMethod = javaFunction.getMethodClass(dealArgsTemp.sign);
+                            namespace = "";
                         }
                         break;
                         default:
-                            return getReturn(Java2JsCallback.JAVA_CALLBACK, methodName, 500,
+                            return getReturn(JavaFunction.JAVA_CALLBACK, methodName, 500,
                                     "unknown javaCallbackType(" + javaCallbackType + ")");
                     }
 
@@ -403,13 +443,14 @@ class JsCallJava
                 dealArgsTemp = dealArgs(webBridge, values, 0, methodName, argsTypes, argsVals, 0, namespace,
                         instanceId);
                 currMethod = methodsMap.get(namespace + "." + dealArgsTemp.sign);
-                if (currMethod != null)
-                {
-                    JsInterface jsInterface = currMethod.method.getAnnotation(JsInterface.class);
-                    values = redealArgs(jsInterface.needBuilder(), values, instanceId);
-                }
             }
 
+            if (currMethod != null)
+            {
+                JsInterface jsInterface = currMethod.method.getAnnotation(JsInterface.class);
+                values = dealParamsFirst(jsInterface, values, instanceId);
+
+            }
 
             String sign = dealArgsTemp.sign;
             int numIndex = dealArgsTemp.numIndex;
@@ -444,18 +485,6 @@ class JsCallJava
 
     }
 
-    private Object[] redealArgs(boolean needBuilder, Object[] values, int instanceId)
-    {
-        if (!needBuilder)
-        {
-            return values;
-        }
-        Java2JsCallback.Builder builder = new Java2JsCallback.Builder(instanceId, willPrintDebugInfo());
-        Object[] vs = new Object[values.length + 1];
-        vs[0] = builder;
-        System.arraycopy(values, 0, vs, 1, values.length);
-        return vs;
-    }
 
     private void dealNum(int numIndex, MethodClass currMethod, Object[] values, JSONArray argsVals) throws JSONException
     {
@@ -550,9 +579,9 @@ class JsCallJava
             } else if ("function".equals(currType))
             {
                 sign += "_F";
-                JsCallback jsCallback = new JsCallback(webBridge, topName, namespace, argsVals.getString(m), instanceId,
+                JsFunction jsFunction = new JsFunction(webBridge, topName, namespace, argsVals.getString(m), instanceId,
                         willPrintDebugInfo());
-                values[offset] = jsCallback;
+                values[offset] = jsFunction;
             } else
             {
                 sign += "_P";
@@ -582,7 +611,7 @@ class JsCallJava
         {
             result = (((String) result).replace("\"", "\\\"")).replace("\n", "\\n").replace("\r", "\\r");
             insertRes = "\"" + result + "\"";
-        } else if (result instanceof Java2JsCallback)
+        } else if (result instanceof JavaFunction)
         {
             insertRes = "\"" + result + "\"";
         } else if (!(result instanceof Integer)

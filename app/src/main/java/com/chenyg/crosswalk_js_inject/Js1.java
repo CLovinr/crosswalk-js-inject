@@ -4,8 +4,8 @@ import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
-import com.chenyg.crossjs.Java2JsCallback;
-import com.chenyg.crossjs.JsCallback;
+import com.chenyg.crossjs.JavaFunction;
+import com.chenyg.crossjs.JsFunction;
 import com.chenyg.crossjs.JsInterface;
 import com.chenyg.crossjs.JsReturn;
 
@@ -31,13 +31,13 @@ public class Js1
     }
 
     @JsInterface
-    public void jsFun(JsCallback callback)
+    public void jsFun(JsFunction callback)
     {
         try
         {
-            callback.apply(new Java2JsCallback(callback)
+            callback.apply(new JavaFunction(callback)
             {
-                @Callback
+                @JsInterface
                 public String toast(String text)
                 {
                     return "response:" + text;
@@ -50,7 +50,7 @@ public class Js1
                     toast(returnValue);
                 }
             });
-        } catch (JsCallback.JsCallbackException e)
+        } catch (JsFunction.JsCallbackException e)
         {
             e.printStackTrace();
         }
@@ -69,16 +69,24 @@ public class Js1
         });
     }
 
-    @JsInterface(needBuilder = true)
-    public Java2JsCallback javaCall(Java2JsCallback.Builder builder)
+    @JsInterface(paramsFirst = {JsInterface.Param.builder})
+    public JavaFunction javaCall(JsInterface.Builder builder)
     {
-        Log.d(getClass().getName(),"javaCall invoked!");
-        return new Java2JsCallback(builder)
+        Log.d(getClass().getName(), "javaCall invoked!");
+        return new JavaFunction(builder)
         {
-            @Callback
-            public String getName()
+            @JsInterface
+            public String getName(JsFunction callback) throws JsCallbackException
             {
-                return getClass().getName()+"\nHello!!!!";
+                callback.apply().onReturn(new JsReturn.Listener()
+                {
+                    @Override
+                    public void onGetString(String returnValue)
+                    {
+                        toast("from JavaFunction:JsFunction:apply:return\n" + returnValue);
+                    }
+                });
+                return getClass().getName() + "\nHello!!!!";
             }
         };
     }

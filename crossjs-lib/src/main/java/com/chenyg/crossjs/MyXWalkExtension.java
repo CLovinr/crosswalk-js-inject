@@ -166,7 +166,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
                     }
 
                     JSONArray _dynamics = new JSONArray();
-                    enables.put("dynamics",_dynamics);
+                    enables.put("dynamics", _dynamics);
                     namespaces = dynamics.keySet().iterator();
                     while (namespaces.hasNext())
                     {
@@ -202,7 +202,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
                     }
 
                     JSONArray _dynamics = new JSONArray();
-                    enables.put("dynamics",_dynamics);
+                    enables.put("dynamics", _dynamics);
                     namespaces = dynamics.keySet().iterator();
                     while (namespaces.hasNext())
                     {
@@ -232,7 +232,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
         }
 
         JsReturn jsReturn = null;
-        postMessage(instanceId, content);
+
 
         if (jsCallbackId != null)
         {
@@ -248,7 +248,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
                 map.put(jsCallbackId, jsReturn);
             }
         }
-
+        postMessage(instanceId, content);
         return jsReturn;
     }
 
@@ -267,7 +267,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
     {
         super.onInstanceDestroyed(instanceID);
         jsReturnMap.remove(instanceID);
-        Java2JsCallback.removeAllByInstanceId(instanceID);
+        JavaFunction.removeAllByInstanceId(instanceID);
         if (jsCallJava.willPrintDebugInfo())
         {
             Log.d(getClass().getName(), "onInstanceDestroyed:" + instanceID);

@@ -1,5 +1,7 @@
 package com.chenyg.crossjs;
 
+import android.text.TextUtils;
+
 /**
  * Created by 宇宙之灵 on 2016/6/30.
  */
@@ -20,6 +22,13 @@ public class CrossjsUtil
      */
     public synchronized static void init(boolean willPrintDebugInfo, String topName, InjectObj... injectObjs)
     {
+        if (TextUtils.isEmpty(topName))
+        {
+            throw new RuntimeException("The topName can not be null!");
+        } else if (!WEBUtil.isTopName(topName))
+        {
+            throw new RuntimeException("The topName is illegal!");
+        }
         if (crossjsUtil == null)
         {
             crossjsUtil = new CrossjsUtil(

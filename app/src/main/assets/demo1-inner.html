@@ -9,7 +9,9 @@
 	<body>
 		<script>
 			var callback = test.js1.javaCall();
-			test.js1.toast(callback());
+			test.js1.toast(callback(function(){
+				return "1111222223333333";
+			}));
 
 			function uuid() {
 				var s = [];

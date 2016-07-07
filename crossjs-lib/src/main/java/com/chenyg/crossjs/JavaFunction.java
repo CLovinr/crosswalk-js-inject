@@ -3,48 +3,37 @@ package com.chenyg.crossjs;
 
 import android.util.Log;
 
-import java.lang.annotation.*;
 import java.lang.reflect.Method;
 import java.util.*;
 
 /**
- * 用于向js端动态传递java函数。使用注解{@linkplain Callback}标记要注入的函数.
+ * 用于向js端动态传递java函数。使用注解{@linkplain JsInterface}标记要注入的函数.
  */
-public abstract class Java2JsCallback extends JsCallback
+public abstract class JavaFunction extends JsFunction
 {
 
-    public static class Builder
-    {
-        int instanceId;
-        boolean isDebug;
 
-        Builder(int instanceId, boolean isDebug)
-        {
-            this.instanceId = instanceId;
-            this.isDebug = isDebug;
-        }
-    }
 
-    /**
-     * 用于标记回调函数(public、非static),函数的名称没有被使用。
-     * 标记的函数可以有返回值，返回值类型同{@linkplain JsInterface}
-     */
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.METHOD)
-    @Documented
-    public @interface Callback
-    {
-        /**
-         * 是否在第一个参数前加入{@linkplain com.chenyg.crossjs.Java2JsCallback.Builder}.默认为false.
-         * @return
-         */
-        boolean needBuilder()default false;
-    }
+//    /**
+//     * 用于标记回调函数(public、非static),函数的名称没有被使用。
+//     * 标记的函数可以有返回值，返回值类型同{@linkplain JsInterface}
+//     */
+//    @Retention(RetentionPolicy.RUNTIME)
+//    @Target(ElementType.METHOD)
+//    @Documented
+//    public @interface Callback
+//    {
+//        /**
+//         * 是否在第一个参数前加入{@linkplain com.chenyg.crossjs.JavaFunction.Builder}.默认为false.
+//         * @return
+//         */
+//        boolean needBuilder()default false;
+//    }
 
-    public static final String JAVA_CALLBACK = "[/JavaCallback/]=";
+    public static final String JAVA_CALLBACK = "[/JavaFunction/]=";
 
-    private static Map<Integer, Map<String, Java2JsCallback>> instanceIdMap = Collections
-            .synchronizedMap(new HashMap<Integer, Map<String, Java2JsCallback>>());
+    private static Map<Integer, Map<String, JavaFunction>> instanceIdMap = Collections
+            .synchronizedMap(new HashMap<Integer, Map<String, JavaFunction>>());
     private HashMap<String, JsCallJava.MethodClass> methodsMap;
 
     static void removeAllByInstanceId(int instanceId)
@@ -62,11 +51,11 @@ public abstract class Java2JsCallback extends JsCallback
     {
         synchronized (instanceIdMap)
         {
-            Map<String, Java2JsCallback> javaCallbackHashMap = instanceIdMap.get(instanceId);
+            Map<String, JavaFunction> javaCallbackHashMap = instanceIdMap.get(instanceId);
 
             if (javaCallbackHashMap == null)
             {
-                Iterator<Map<String, Java2JsCallback>> iterator = instanceIdMap.values().iterator();
+                Iterator<Map<String, JavaFunction>> iterator = instanceIdMap.values().iterator();
                 while (iterator.hasNext())
                 {
                     javaCallbackHashMap = iterator.next();
@@ -96,16 +85,16 @@ public abstract class Java2JsCallback extends JsCallback
      * @param instanceId
      * @return
      */
-    static Java2JsCallback get(String callbackId, int instanceId)
+    static JavaFunction get(String callbackId, int instanceId)
     {
         synchronized (instanceIdMap)
         {
-            Map<String, Java2JsCallback> map = instanceIdMap.get(instanceId);
+            Map<String, JavaFunction> map = instanceIdMap.get(instanceId);
             if (map != null && map.containsKey(callbackId))
             {
                 return map.get(callbackId);
             }
-            Iterator<Map<String, Java2JsCallback>> iterator = instanceIdMap.values().iterator();
+            Iterator<Map<String, JavaFunction>> iterator = instanceIdMap.values().iterator();
             while (iterator.hasNext())
             {
                 map = iterator.next();
@@ -118,32 +107,32 @@ public abstract class Java2JsCallback extends JsCallback
         }
     }
 
-    private static int instanceIdCheck(JsCallback jsCallback)
+    private static int instanceIdCheck(JsFunction jsFunction)
     {
-        if (jsCallback == null || jsCallback instanceof Java2JsCallback)
+        if (jsFunction == null || jsFunction instanceof JavaFunction)
         {
-            throw new RuntimeException(JsCallback.class.getSimpleName() + " for " + Java2JsCallback.class
+            throw new RuntimeException(JsFunction.class.getSimpleName() + " for " + JavaFunction.class
                     .getSimpleName() + " is illegal!");
         }
-        return jsCallback.instanceId;
+        return jsFunction.instanceId;
     }
 
-    public Java2JsCallback(Builder builder)
+    public JavaFunction(JsInterface.Builder builder)
     {
         this(builder.instanceId, builder.isDebug);
     }
 
-    public Java2JsCallback(JsCallback jsCallback)
+    public JavaFunction(JsFunction jsFunction)
     {
-        this(instanceIdCheck(jsCallback), jsCallback.isDebug);
+        this(instanceIdCheck(jsFunction), jsFunction.isDebug);
     }
 
-    private Java2JsCallback(int istanceId, boolean isDebug)
+    private JavaFunction(int instanceId, boolean isDebug)
     {
-        super(null, null, "", UUID.randomUUID().toString(), istanceId, isDebug);
+        super(null, null, "", UUID.randomUUID().toString(), instanceId, isDebug);
         synchronized (instanceIdMap)
         {
-            Map<String, Java2JsCallback> map = instanceIdMap.get(instanceId);
+            Map<String, JavaFunction> map = instanceIdMap.get(instanceId);
             if (map == null)
             {
                 map = new HashMap<>();
@@ -160,7 +149,7 @@ public abstract class Java2JsCallback extends JsCallback
             {
                 String sign;
                 if ((sign = JsCallJava.genJavaMethodSign(
-                        method, false, Callback.class)) == null)
+                        method, false, JsInterface.class)) == null)
                 {
                     continue;
                 }

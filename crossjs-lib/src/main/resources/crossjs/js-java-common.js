@@ -35,7 +35,7 @@
     function _function2Id(fun,callJavaObj){
         var id =_ID();
         callJavaObj.queue[id] = fun;
-        return "<JSON_FUNCTION_STARTS>"+id;
+        return "<JS_FUNCTION_STARTS>"+id;
     }
 	/**
 	 * 转换数组
