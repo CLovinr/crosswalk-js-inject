@@ -36,8 +36,8 @@ var __async_bridge__ = function(jsonStr) {
 /*对于被写死的接口中被允许的*/
 var enables__ = JSON.parse(extension.internal.sendSyncMessage(buildMessage__("enables",location.href)));
 
-var enableInjects__ = enables__["injects"];
-var dynamics__ = enables__["dynamics"];
+var enableInjects__ = enables__["injects"];/*静态注入的*/
+var dynamics__ = enables__["dynamics"];/*动态注入的*/
 var static__=true;
 enables__=null;
 

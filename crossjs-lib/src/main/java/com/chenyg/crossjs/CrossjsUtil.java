@@ -47,13 +47,41 @@ public class CrossjsUtil
     }
 
     /**
-     * 禁用或者启用注入的接口。
+     * 禁用或者启用所有注入的接口。
      *
      * @param isDisabled 是否禁用。
      */
     public void disable(boolean isDisabled)
     {
         myXWalkExtension.disable(isDisabled);
+    }
+
+    /**
+     * 清除所有禁用设置，包括全局禁用。
+     */
+    public void clearAllDisables()
+    {
+        myXWalkExtension.clearAllDisables();
+        disable(false);
+    }
+
+    /**
+     * 清除所有动态注入的接口。
+     */
+    public void clearAllDynamics()
+    {
+        myXWalkExtension.clearAllDynamics();
+    }
+
+    /**
+     * 禁用或启用指定的接口。
+     *
+     * @param namespace
+     * @param isDisable
+     */
+    public void disableInjectObj(String namespace, boolean isDisable)
+    {
+        myXWalkExtension.disableInjectObj(namespace, isDisable);
     }
 
     public void setIInjectHandle(IInjectHandle iInjectHandle)
@@ -66,7 +94,7 @@ public class CrossjsUtil
      *
      * @param injectObj
      */
-    public synchronized void addDynamicInjectObj(InjectObj injectObj)
+    public void addDynamicInjectObj(InjectObj injectObj)
     {
         myXWalkExtension.addDynamicInjectObj(injectObj);
     }
@@ -76,7 +104,7 @@ public class CrossjsUtil
      *
      * @param namespace
      */
-    public synchronized void removeDynamicInjectObj(String namespace)
+    public void removeDynamicInjectObj(String namespace)
     {
         myXWalkExtension.removeDynamicInjectObj(namespace);
     }

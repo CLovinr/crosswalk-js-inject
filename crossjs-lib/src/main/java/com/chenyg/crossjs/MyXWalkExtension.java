@@ -14,13 +14,13 @@ import java.util.*;
 class MyXWalkExtension extends XWalkExtension implements WebBridge
 {
     private JsCallJava jsCallJava;
-    private Map<Integer, Map<String, JsReturn>> jsReturnMap = Collections
-            .synchronizedMap(new HashMap<Integer, Map<String, JsReturn>>());
+    private Map<Integer, Map<String, JsReturn>> jsReturnMap = new HashMap<>();
     private boolean isDisabled = false;
-    private Set<String> injectsNames = Collections.synchronizedSet(new HashSet<String>());
+    private Set<String> injectsNames = new HashSet<String>();
     private IInjectHandle iInjectHandle;
 
-    private Map<String, String> dynamics = Collections.synchronizedMap(new HashMap<String, String>());
+    private Map<String, String> dynamics = new HashMap<>();
+    private Set<String> disables = new HashSet<>();
 
     public MyXWalkExtension(String topName, JsCallJava jsCallJava, InjectObj[] injectObjs)
     {
@@ -51,12 +51,43 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
         dynamics.remove(namespace);
     }
 
+    /**
+     * 清除所有禁用的接口。
+     */
+    public synchronized void clearAllDisables(){
+        disables.clear();
+    }
+
+    /**
+     * 清除所有动态注入的接口。
+     */
+    public synchronized void clearAllDynamics(){
+        dynamics.clear();
+    }
+
+    /**
+     * 禁用或启用指定的接口。
+     *
+     * @param namespace
+     * @param isDisable
+     */
+    public synchronized void disableInjectObj(String namespace, boolean isDisable)
+    {
+        if (isDisable)
+        {
+            disables.add(namespace);
+        } else
+        {
+            disables.remove(namespace);
+        }
+    }
+
     public synchronized void setIInjectHandle(IInjectHandle iInjectHandle)
     {
         this.iInjectHandle = iInjectHandle;
     }
 
-    private IInjectHandle getIInjectHandle()
+    private synchronized IInjectHandle getIInjectHandle()
     {
         return iInjectHandle == null ? IInjectHandle.ENABLE_ALL_HANDLE : iInjectHandle;
     }
@@ -72,7 +103,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
     }
 
     @Override
-    public void onMessage(int instanceId, String jsonStr)
+    public synchronized void onMessage(int instanceId, String jsonStr)
     {
         if (isDisabled)
         {
@@ -159,7 +190,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
                     while (namespaces.hasNext())
                     {
                         String ns = namespaces.next();
-                        if (Arrays.binarySearch(interfaceNamespaces, ns) >= 0)
+                        if (Arrays.binarySearch(interfaceNamespaces, ns) >= 0&&!disables.contains(ns))
                         {
                             injects.put(ns, true);
                         }
@@ -171,7 +202,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
                     while (namespaces.hasNext())
                     {
                         String ns = namespaces.next();
-                        if (Arrays.binarySearch(interfaceNamespaces, ns) >= 0)
+                        if (Arrays.binarySearch(interfaceNamespaces, ns) >= 0&&!disables.contains(ns))
                         {
                             _dynamics.put(dynamics.get(ns));
                         }
@@ -195,7 +226,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
                     while (namespaces.hasNext())
                     {
                         String ns = namespaces.next();
-                        if (Arrays.binarySearch(interfaceNamespaces, ns) < 0)
+                        if (Arrays.binarySearch(interfaceNamespaces, ns) < 0&&!disables.contains(ns))
                         {
                             injects.put(ns, true);
                         }
@@ -207,7 +238,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
                     while (namespaces.hasNext())
                     {
                         String ns = namespaces.next();
-                        if (Arrays.binarySearch(interfaceNamespaces, ns) < 0)
+                        if (Arrays.binarySearch(interfaceNamespaces, ns) < 0&&!disables.contains(ns))
                         {
                             _dynamics.put(dynamics.get(ns));
                         }
@@ -223,7 +254,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
     }
 
     @Override
-    public JsReturn invoke(String jsCallbackId, int instanceId, String content)
+    public synchronized JsReturn invoke(String jsCallbackId, int instanceId, String content)
     {
 
         if (isDisabled)
@@ -253,7 +284,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
     }
 
     @Override
-    public void onInstanceCreated(int instanceID)
+    public synchronized void onInstanceCreated(int instanceID)
     {
         super.onInstanceCreated(instanceID);
         if (jsCallJava.willPrintDebugInfo())
@@ -263,7 +294,7 @@ class MyXWalkExtension extends XWalkExtension implements WebBridge
     }
 
     @Override
-    public void onInstanceDestroyed(int instanceID)
+    public synchronized void onInstanceDestroyed(int instanceID)
     {
         super.onInstanceDestroyed(instanceID);
         jsReturnMap.remove(instanceID);
