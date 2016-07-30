@@ -12,6 +12,8 @@ package com.chenyg.crossjs;
 import android.util.Log;
 import org.json.JSONArray;
 
+import java.lang.reflect.Array;
+
 /**
  * 用于java端调用js。
  */
@@ -66,9 +68,24 @@ public class JsFunction
             throw new JsCallbackException("the JsFunction isn't permanent,cannot be called more than once");
         }
         JSONArray params = new JSONArray();
-        for (Object arg : args)
+        try
         {
-            params.put(arg);
+            for (Object arg : args)
+            {
+                if(arg!=null&&arg.getClass().isArray()){
+                    JSONArray array = new JSONArray();
+                    int length = Array.getLength(arg);
+                    for (int i = 0; i < length; i++)
+                    {
+                        array.put(Array.get(arg,i));
+                    }
+                    params.put(array);
+                }else{
+                    params.put(arg);
+                }
+            }
+        }catch (Exception e){
+            throw new JsCallbackException(e);
         }
 
         String execJs = String.format(CALLBACK_JS_FORMAT, namespace, id, isPermanent() ? 1 : 0, params.toString());
@@ -87,6 +104,10 @@ public class JsFunction
         public JsCallbackException(String msg)
         {
             super(msg);
+        }
+        public JsCallbackException(Throwable thr)
+        {
+            super(thr);
         }
     }
 
